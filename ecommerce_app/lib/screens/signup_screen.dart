@@ -1,8 +1,7 @@
 import 'package:ecommerce_app/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -17,7 +16,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
   bool _isLoading = false;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -39,11 +38,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
     });
 
     try {
+      final UserCredential userCredential =
       await _auth.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
+      if (userCredential.user != null) {
+        await _firestore.collection('users').doc(userCredential.user!.uid).set({
+          'email': _emailController.text.trim(),
+          'role': 'user',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
 
     } on FirebaseAuthException catch (e) {
       String message = 'An error occurred';
@@ -138,8 +145,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       : const Text('Sign Up'),
                 ),
 
-
-
                 const SizedBox(height: 10),
 
                 TextButton(
@@ -151,9 +156,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     );
                   },
                   child: const Text("Already have an account? Login"),
-
                 ),
-
               ],
             ),
           ),
